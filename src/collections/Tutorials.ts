@@ -4,7 +4,7 @@ export const Tutorials: CollectionConfig = {
   slug: 'tutorials',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'isPublished', 'updatedAt'],
+    defaultColumns: ['title', 'category', 'order', 'isPublished', 'updatedAt'],
   },
   access: {
     read: ({ req: { user } }) => {
@@ -52,6 +52,45 @@ export const Tutorials: CollectionConfig = {
       required: true,
       admin: {
         description: 'Select the technology category',
+      },
+    },
+    {
+      name: 'order',
+      type: 'number',
+      required: true,
+      defaultValue: 1,
+      admin: {
+        description: 'Sequence order (1, 2, 3...) - tutorials are displayed in ascending order',
+        position: 'sidebar',
+      },
+      validate: async (value, { data, req, operation, id }) => {
+        // Only validate on create/update with a category
+        if (!data?.category || value === undefined) {
+          return true
+        }
+
+        // Get the category ID (could be string or object)
+        const categoryId = typeof data.category === 'object' ? data.category.id : data.category
+
+        // Check if another tutorial in the same category has this order
+        const existing = await req.payload.find({
+          collection: 'tutorials',
+          where: {
+            and: [
+              { category: { equals: categoryId } },
+              { order: { equals: value } },
+              // Exclude the current document if updating
+              ...(operation === 'update' && id ? [{ id: { not_equals: id } }] : []),
+            ],
+          },
+          limit: 1,
+        })
+
+        if (existing.docs.length > 0) {
+          return `Order ${value} is already used by another tutorial in this category. Please choose a different order number.`
+        }
+
+        return true
       },
     },
     {

@@ -198,6 +198,10 @@ export interface Tutorial {
    */
   category: number | Category;
   /**
+   * Sequence order (1, 2, 3...) - tutorials are displayed in ascending order
+   */
+  order: number;
+  /**
    * Brief summary for listings and SEO
    */
   summary: string;
@@ -405,6 +409,7 @@ export interface TutorialsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   category?: T;
+  order?: T;
   summary?: T;
   content?: T;
   readingTime?: T;
