@@ -63,35 +63,6 @@ export const Tutorials: CollectionConfig = {
         description: 'Sequence order (1, 2, 3...) - tutorials are displayed in ascending order',
         position: 'sidebar',
       },
-      validate: async (value, { data, req, operation, id }) => {
-        // Only validate on create/update with a category
-        if (!data?.category || value === undefined) {
-          return true
-        }
-
-        // Get the category ID (could be string or object)
-        const categoryId = typeof data.category === 'object' ? data.category.id : data.category
-
-        // Check if another tutorial in the same category has this order
-        const existing = await req.payload.find({
-          collection: 'tutorials',
-          where: {
-            and: [
-              { category: { equals: categoryId } },
-              { order: { equals: value } },
-              // Exclude the current document if updating
-              ...(operation === 'update' && id ? [{ id: { not_equals: id } }] : []),
-            ],
-          },
-          limit: 1,
-        })
-
-        if (existing.docs.length > 0) {
-          return `Order ${value} is already used by another tutorial in this category. Please choose a different order number.`
-        }
-
-        return true
-      },
     },
     {
       name: 'summary',
@@ -144,6 +115,32 @@ export const Tutorials: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeValidate: [
+      async ({ data, req, operation, originalDoc }) => {
+        // Validate unique order within category
+        if (data?.category && data?.order !== undefined) {
+          const categoryId = typeof data.category === 'object' ? data.category.id : data.category
+
+          const existing = await req.payload.find({
+            collection: 'tutorials',
+            where: {
+              and: [
+                { category: { equals: categoryId } },
+                { order: { equals: data.order } },
+                // Exclude the current document if updating
+                ...(operation === 'update' && originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
+              ],
+            },
+            limit: 1,
+          })
+
+          if (existing.docs.length > 0) {
+            throw new Error(`Order ${data.order} is already used by another tutorial in this category. Please choose a different order number.`)
+          }
+        }
+        return data
+      },
+    ],
     beforeChange: [
       async ({ data }) => {
         // Auto-calculate reading time if not provided
