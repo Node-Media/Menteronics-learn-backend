@@ -56,13 +56,13 @@ export const Media: CollectionConfig = {
         try {
           const file = req.file
           const fileBuffer = file.data
-          const fileName = `${Date.now()}-${file.filename}`
+          const fileName = `${Date.now()}-${file.name}`
 
           // Upload to Supabase Storage
           const { data: uploadData, error } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(fileName, fileBuffer, {
-              contentType: file.mimeType,
+              contentType: file.mimetype,
               upsert: false,
             })
 
