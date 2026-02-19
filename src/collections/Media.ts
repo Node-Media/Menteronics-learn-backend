@@ -1,6 +1,5 @@
 import type { CollectionConfig } from 'payload'
 import { supabase, STORAGE_BUCKET } from '../lib/supabase'
-import type { FileData } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -59,7 +58,7 @@ export const Media: CollectionConfig = {
           const fileName = `${Date.now()}-${file.name}`
 
           // Upload to Supabase Storage
-          const { data: uploadData, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(fileName, fileBuffer, {
               contentType: file.mimetype,

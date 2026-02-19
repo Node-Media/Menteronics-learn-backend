@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Format results
-    const tutorials = tutorialsResult.docs.map((doc: any) => ({
-      type: 'tutorial',
+    const tutorials = tutorialsResult.docs.map((doc) => ({
+      type: 'tutorial' as const,
       id: doc.id,
       title: doc.title,
       slug: doc.slug,
@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
       category: doc.category,
     }))
 
-    const blogs = blogsResult.docs.map((doc: any) => ({
-      type: 'blog',
+    const blogs = blogsResult.docs.map((doc) => ({
+      type: 'blog' as const,
       id: doc.id,
       title: doc.title,
       slug: doc.slug,

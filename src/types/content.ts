@@ -69,48 +69,55 @@ export type ContentBlock =
 export type StructuredContent = ContentBlock[]
 
 // Validation function
-export function validateContentBlock(block: any): block is ContentBlock {
-  if (!block || typeof block !== 'object' || !block.type) {
+export function validateContentBlock(block: unknown): block is ContentBlock {
+  if (!block || typeof block !== 'object' || !('type' in block)) {
     return false
   }
 
-  switch (block.type) {
+  const typedBlock = block as { type: string; [key: string]: unknown }
+
+  switch (typedBlock.type) {
     case 'heading':
       return (
-        typeof block.content === 'string' &&
-        [1, 2, 3, 4, 5, 6].includes(block.level)
+        typeof typedBlock.content === 'string' &&
+        'level' in typedBlock &&
+        [1, 2, 3, 4, 5, 6].includes(typedBlock.level as number)
       )
     case 'paragraph':
-      return typeof block.content === 'string'
+      return typeof typedBlock.content === 'string'
     case 'image':
       return (
-        typeof block.url === 'string' &&
-        typeof block.alt === 'string'
+        typeof typedBlock.url === 'string' &&
+        typeof typedBlock.alt === 'string'
       )
     case 'code':
       return (
-        typeof block.content === 'string' &&
-        typeof block.language === 'string'
+        typeof typedBlock.content === 'string' &&
+        typeof typedBlock.language === 'string'
       )
     case 'link':
       return (
-        typeof block.url === 'string' &&
-        typeof block.text === 'string'
+        typeof typedBlock.url === 'string' &&
+        typeof typedBlock.text === 'string'
       )
     case 'list':
       return (
-        typeof block.ordered === 'boolean' &&
-        Array.isArray(block.items) &&
-        block.items.every((item: any) => typeof item === 'string')
+        'ordered' in typedBlock &&
+        typeof typedBlock.ordered === 'boolean' &&
+        'items' in typedBlock &&
+        Array.isArray(typedBlock.items) &&
+        typedBlock.items.every((item) => typeof item === 'string')
       )
     case 'table':
       return (
-        Array.isArray(block.headers) &&
-        Array.isArray(block.rows) &&
-        block.headers.every((h: any) => typeof h === 'string') &&
-        block.rows.every(
-          (row: any) =>
-            Array.isArray(row) && row.every((cell: any) => typeof cell === 'string')
+        'headers' in typedBlock &&
+        'rows' in typedBlock &&
+        Array.isArray(typedBlock.headers) &&
+        Array.isArray(typedBlock.rows) &&
+        typedBlock.headers.every((h) => typeof h === 'string') &&
+        typedBlock.rows.every(
+          (row) =>
+            Array.isArray(row) && row.every((cell) => typeof cell === 'string')
         )
       )
     default:
@@ -118,7 +125,7 @@ export function validateContentBlock(block: any): block is ContentBlock {
   }
 }
 
-export function validateStructuredContent(content: any): content is StructuredContent {
+export function validateStructuredContent(content: unknown): content is StructuredContent {
   if (!Array.isArray(content)) {
     return false
   }

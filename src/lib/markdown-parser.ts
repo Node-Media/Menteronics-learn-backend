@@ -103,33 +103,33 @@ export async function markdownToBlocks(markdown: string): Promise<ContentBlock[]
 }
 
 // Extract text content from a node
-function extractText(node: any): string {
-  if (node.type === 'text') {
-    return node.value
+function extractText(node: Content | { type: string; value?: string; children?: unknown[] }): string {
+  if (node.type === 'text' && 'value' in node) {
+    return node.value || ''
   }
 
-  if (node.type === 'inlineCode') {
-    return `\`${node.value}\``
+  if (node.type === 'inlineCode' && 'value' in node) {
+    return `\`${node.value || ''}\``
   }
 
-  if (node.type === 'strong') {
-    return `**${extractText(node.children[0])}**`
+  if (node.type === 'strong' && 'children' in node && Array.isArray(node.children) && node.children[0]) {
+    return `**${extractText(node.children[0] as Content)}**`
   }
 
-  if (node.type === 'emphasis') {
-    return `*${extractText(node.children[0])}*`
+  if (node.type === 'emphasis' && 'children' in node && Array.isArray(node.children) && node.children[0]) {
+    return `*${extractText(node.children[0] as Content)}*`
   }
 
-  if (node.type === 'link') {
-    const text = node.children.map((c: any) => extractText(c)).join('')
-    return `[${text}](${node.url})`
+  if (node.type === 'link' && 'children' in node && 'url' in node) {
+    const text = (node.children as Content[]).map((c) => extractText(c)).join('')
+    return `[${text}](${node.url as string})`
   }
 
   if ('children' in node && Array.isArray(node.children)) {
-    return node.children.map((child: any) => extractText(child)).join('')
+    return node.children.map((child) => extractText(child as Content)).join('')
   }
 
-  if ('value' in node) {
+  if ('value' in node && node.value) {
     return node.value
   }
 
