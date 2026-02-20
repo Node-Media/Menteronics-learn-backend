@@ -17,13 +17,13 @@ export const Media: CollectionConfig = {
       {
         name: 'thumbnail',
         width: 400,
-        height: 300,
+        height: undefined, // Maintain aspect ratio, no cropping
         position: 'centre',
       },
       {
         name: 'card',
         width: 768,
-        height: 576,
+        height: undefined, // Maintain aspect ratio, no cropping
         position: 'centre',
       },
       {
