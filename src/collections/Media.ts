@@ -13,6 +13,8 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
+    staticURL: '/media',
+    staticDir: 'media',
     imageSizes: [
       {
         name: 'thumbnail',
@@ -32,7 +34,22 @@ export const Media: CollectionConfig = {
         height: undefined, // Maintain aspect ratio
         position: 'centre',
       },
+      {
+        name: 'large',
+        width: 1920,
+        height: undefined, // Maintain aspect ratio
+        position: 'centre',
+      },
     ],
     mimeTypes: ['image/*'],
+    adminThumbnail: 'thumbnail',
+    crop: true, // Enable cropping
+    focalPoint: true, // Enable focal point selection
+    formatOptions: {
+      format: 'webp', // Convert to WebP for better compression
+      options: {
+        quality: 85,
+      },
+    },
   },
 }

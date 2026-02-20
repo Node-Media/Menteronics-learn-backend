@@ -19,7 +19,13 @@ ADD COLUMN IF NOT EXISTS sizes_tablet_width numeric,
 ADD COLUMN IF NOT EXISTS sizes_tablet_height numeric,
 ADD COLUMN IF NOT EXISTS sizes_tablet_mime_type text,
 ADD COLUMN IF NOT EXISTS sizes_tablet_filesize numeric,
-ADD COLUMN IF NOT EXISTS sizes_tablet_filename text;
+ADD COLUMN IF NOT EXISTS sizes_tablet_filename text,
+ADD COLUMN IF NOT EXISTS sizes_large_url text,
+ADD COLUMN IF NOT EXISTS sizes_large_width numeric,
+ADD COLUMN IF NOT EXISTS sizes_large_height numeric,
+ADD COLUMN IF NOT EXISTS sizes_large_mime_type text,
+ADD COLUMN IF NOT EXISTS sizes_large_filesize numeric,
+ADD COLUMN IF NOT EXISTS sizes_large_filename text;
 
 -- Verify columns were added
 SELECT column_name, data_type 
