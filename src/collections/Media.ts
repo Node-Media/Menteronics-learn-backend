@@ -13,23 +13,7 @@ export const Media: CollectionConfig = {
       required: true,
     },
   ],
-  upload: {
-    staticDir: 'media',
-    imageSizes: [
-      {
-        name: 'thumbnail',
-        width: 400,
-        height: 300,
-        position: 'centre',
-      },
-      {
-        name: 'card',
-        width: 768,
-        height: 1024,
-        position: 'centre',
-      },
-    ],
-  },
+  upload: true,
   hooks: {
     afterChange: [
       async ({ doc, req, operation }) => {
