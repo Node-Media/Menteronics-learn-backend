@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { supabase, STORAGE_BUCKET } from '../lib/supabase'
+import { supabase, STORAGE_BUCKET, isSupabaseConfigured } from '../lib/supabase'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -12,17 +12,9 @@ export const Media: CollectionConfig = {
       type: 'text',
       required: true,
     },
-    {
-      name: 'url',
-      type: 'text',
-      admin: {
-        readOnly: true,
-      },
-    },
   ],
   upload: {
-    staticDir: '/tmp',
-    adminThumbnail: 'thumbnail',
+    staticDir: 'media',
     imageSizes: [
       {
         name: 'thumbnail',
@@ -36,64 +28,101 @@ export const Media: CollectionConfig = {
         height: 1024,
         position: 'centre',
       },
-      {
-        name: 'tablet',
-        width: 1024,
-        height: undefined,
-        position: 'centre',
-      },
     ],
   },
   hooks: {
-    beforeChange: [
-      async ({ data, req }) => {
-        // Skip if no file data
-        if (!data || !req.file) {
-          return data
+    afterChange: [
+      async ({ doc, req, operation }) => {
+        // Skip if Supabase is not configured
+        if (!isSupabaseConfigured()) {
+          console.log('Supabase not configured, skipping upload')
+          return doc
+        }
+
+        // Only upload to Supabase on create
+        if (operation !== 'create' || !doc.filename) {
+          return doc
         }
 
         try {
-          const file = req.file
-          const fileBuffer = file.data
-          const fileName = `${Date.now()}-${file.name}`
+          console.log('Uploading to Supabase:', doc.filename)
+
+          // Construct file URL from Payload
+          const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_URL || 'http://localhost:3000'
+          const fileURL = `${serverUrl.startsWith('http') ? serverUrl : `https://${serverUrl}`}/media/${doc.filename}`
+          
+          // Fetch the file from Payload
+          const response = await fetch(fileURL)
+          if (!response.ok) {
+            console.error(`Failed to fetch file: ${response.statusText}`)
+            return doc
+          }
+
+          const arrayBuffer = await response.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
+          const fileName = `${Date.now()}-${doc.filename}`
+
+          console.log('File fetched, uploading to Supabase...')
 
           // Upload to Supabase Storage
-          const { error } = await supabase.storage
+          const { data, error } = await supabase!.storage
             .from(STORAGE_BUCKET)
-            .upload(fileName, fileBuffer, {
-              contentType: file.mimetype,
+            .upload(fileName, buffer, {
+              contentType: doc.mimeType,
               upsert: false,
             })
 
           if (error) {
             console.error('Supabase upload error:', error)
-            throw new Error(`Failed to upload file: ${error.message}`)
+            return doc
           }
 
+          console.log('Upload successful:', data)
+
           // Get public URL
-          const { data: urlData } = supabase.storage
+          const { data: urlData } = supabase!.storage
             .from(STORAGE_BUCKET)
             .getPublicUrl(fileName)
 
-          // Add URL to data
-          data.url = urlData.publicUrl
+          console.log('Public URL:', urlData.publicUrl)
 
-          return data
+          // Update document with Supabase URL
+          await req.payload.update({
+            collection: 'media',
+            id: doc.id,
+            data: {
+              url: urlData.publicUrl,
+            },
+          })
+
+          return doc
         } catch (error) {
-          console.error('Upload error:', error)
-          throw error
+          console.error('afterChange hook error:', error)
+          return doc
         }
       },
     ],
     afterDelete: [
       async ({ doc }) => {
+        // Skip if Supabase is not configured
+        if (!isSupabaseConfigured()) {
+          return
+        }
+
         // Delete from Supabase Storage
-        if (doc.url) {
+        if (doc.filename) {
           try {
-            const fileName = doc.url.split('/').pop()
-            if (fileName) {
-              await supabase.storage.from(STORAGE_BUCKET).remove([fileName])
+            // Extract Supabase filename from URL if it exists
+            let fileToDelete = doc.filename
+            
+            if (doc.url && doc.url.includes(STORAGE_BUCKET)) {
+              fileToDelete = doc.url.split('/').pop() || doc.filename
             }
+
+            console.log('Deleting from Supabase:', fileToDelete)
+            
+            await supabase!.storage.from(STORAGE_BUCKET).remove([fileToDelete])
+            console.log('Deleted successfully')
           } catch (error) {
             console.error('Error deleting file from Supabase:', error)
           }
