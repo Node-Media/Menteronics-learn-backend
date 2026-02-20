@@ -1,5 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -10,6 +11,8 @@ import { Media } from './collections/Media'
 import { Categories } from './collections/Categories'
 import { Tutorials } from './collections/Tutorials'
 import { Blogs } from './collections/Blogs'
+import { supabaseAdapter } from './lib/supabase-storage'
+import { isSupabaseConfigured } from './lib/supabase'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -33,5 +36,19 @@ export default buildConfig({
     },
   }),
   sharp,
-  plugins: [],
+  plugins: [
+    // Only use cloud storage if Supabase is configured
+    ...(isSupabaseConfigured()
+      ? [
+          cloudStoragePlugin({
+            collections: {
+              media: {
+                adapter: supabaseAdapter,
+                disablePayloadAccessControl: true,
+              },
+            },
+          }),
+        ]
+      : []),
+  ],
 })
